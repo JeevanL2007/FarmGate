@@ -522,7 +522,6 @@ elif menu_selection == "📈 Historical Trends & Analytics":
             x="arrivals_in_qtl",
             y="modal_price",
             color="market_name",
-            trendline="ols",
             title=f"Supply vs Price Elasticity: Arrivals (Quintals) vs Modal Price (₹/qtl)",
             labels={"arrivals_in_qtl": "Arrivals (Quintals)", "modal_price": "Modal Price (₹/qtl)"}
         )
