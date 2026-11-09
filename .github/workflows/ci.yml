@@ -1,4 +1,4 @@
-name: FarmGate CI Pipeline
+name: FarmGate CI/CD Pipeline
 
 on:
   push:
@@ -8,6 +8,7 @@ on:
 
 jobs:
   test:
+    name: Run Automated Tests
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -34,3 +35,19 @@ jobs:
     - name: Run Test Suite with Pytest
       run: |
         python -m pytest --maxfail=1 --disable-warnings -v
+
+  docker-build:
+    name: Build & Validate Docker Container
+    needs: test
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v4
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Build Docker Image
+      run: |
+        docker build -t farmgate:latest .
