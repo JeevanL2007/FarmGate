@@ -27,6 +27,12 @@ from src.utils import (
     format_quintal_price,
     haversine_distance_km
 )
+import src.data_loader
+import importlib
+try:
+    importlib.reload(src.data_loader)
+except Exception:
+    pass
 from src.data_loader import seed_database_and_generate_data, auto_update_daily_prices
 
 # Page Configuration
