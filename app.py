@@ -27,7 +27,7 @@ from src.utils import (
     format_quintal_price,
     haversine_distance_km
 )
-from src.data_loader import seed_database_and_generate_data
+from src.data_loader import seed_database_and_generate_data, auto_update_daily_prices
 
 # Page Configuration
 st.set_page_config(
@@ -101,10 +101,21 @@ def get_db():
     markets = db.get_markets()
     if markets.empty:
         seed_database_and_generate_data(db, num_days=180)
+    else:
+        # Seamlessly auto-update daily price records up to today
+        auto_update_daily_prices(db)
     return db
 
 
 db = get_db()
+# Always ensure dates are synced up to the current day
+today_str = pd.to_datetime("today").strftime("%Y-%m-%d")
+all_dates = db.get_available_dates()
+if not all_dates or all_dates[0] < today_str:
+    auto_update_daily_prices(db)
+    all_dates = db.get_available_dates()
+latest_mandi_date = all_dates[0] if all_dates else today_str
+
 decision_engine = SmartSellingEngine()
 
 # Sidebar Navigation
@@ -128,8 +139,18 @@ st.sidebar.markdown("---")
 # Quick stats in sidebar
 markets_df = db.get_markets()
 commodities_df = db.get_commodities()
-st.sidebar.markdown(f"**Markets Monitored:** {len(markets_df)} APMCs")
-st.sidebar.markdown(f"**Commodities Tracked:** {len(commodities_df)} crops")
+st.sidebar.markdown(f"📅 **Latest APMC Quotes:** `{latest_mandi_date}`")
+st.sidebar.markdown(f"🏢 **Markets Monitored:** {len(markets_df)} APMCs")
+st.sidebar.markdown(f"🌱 **Commodities Tracked:** {len(commodities_df)} crops")
+
+if st.sidebar.button("🔄 Sync Live Mandi Prices", use_container_width=True):
+    added = auto_update_daily_prices(db)
+    if added > 0:
+        st.sidebar.success(f"Added {added} latest price records for today!")
+    else:
+        st.sidebar.info("Database is already up to date with today's quotes!")
+    st.rerun()
+
 st.sidebar.info("💡 **Tip**: Change origin and harvest quantity to compare real net earnings after transport.")
 
 
