@@ -16,6 +16,19 @@ PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))
 if PROJECT_ROOT not in sys.path:
     sys.path.insert(0, PROJECT_ROOT)
 
+import importlib
+import src.database
+import src.decision_engine
+import src.ml_model
+import src.utils
+import src.data_loader
+
+for _m in [src.database, src.decision_engine, src.ml_model, src.utils, src.data_loader]:
+    try:
+        importlib.reload(_m)
+    except Exception:
+        pass
+
 from src.database import FarmGateDB
 from src.decision_engine import SmartSellingEngine
 from src.ml_model import PriceForecaster
@@ -27,12 +40,6 @@ from src.utils import (
     format_quintal_price,
     haversine_distance_km
 )
-import src.data_loader
-import importlib
-try:
-    importlib.reload(src.data_loader)
-except Exception:
-    pass
 from src.data_loader import seed_database_and_generate_data, auto_update_daily_prices
 
 # Page Configuration
@@ -318,6 +325,18 @@ if menu_selection == "🚚 Smart Selling Recommender":
         tab_chart, tab_table, tab_breakdown = st.tabs(["📈 Profit & Cost Chart", "📋 Complete Market Ranking Table", "🔍 Cost Waterfall Breakdown"])
 
         ranking_df = summary["ranking_table"]
+
+        # Ensure column availability regardless of module cache state
+        if "Estimated net selling proceeds (₹)" not in ranking_df.columns:
+            if "Net Profit (₹)" in ranking_df.columns:
+                ranking_df["Estimated net selling proceeds (₹)"] = ranking_df["Net Profit (₹)"]
+            else:
+                ranking_df["Estimated net selling proceeds (₹)"] = 0.0
+        if "Total selling deductions (₹)" not in ranking_df.columns:
+            if "Total Expenses (₹)" in ranking_df.columns:
+                ranking_df["Total selling deductions (₹)"] = ranking_df["Total Expenses (₹)"]
+            else:
+                ranking_df["Total selling deductions (₹)"] = 0.0
 
         with tab_chart:
             # Bar chart comparing Gross vs Deductions vs Net
@@ -630,6 +649,12 @@ elif menu_selection == "🤖 ML Price Forecasting":
             forecaster = PriceForecaster(model_type=model_algorithm)
             train_output = forecaster.train(market_history_df, test_size_days=30)
             forecast_df = forecaster.forecast_next_days(market_history_df, horizon_days=horizon_days)
+
+            # Ensure illustrative bound column availability
+            if "Lower illustrative bound (₹/qtl)" not in forecast_df.columns and "Lower CI (₹/qtl)" in forecast_df.columns:
+                forecast_df["Lower illustrative bound (₹/qtl)"] = forecast_df["Lower CI (₹/qtl)"]
+            if "Upper illustrative bound (₹/qtl)" not in forecast_df.columns and "Upper CI (₹/qtl)" in forecast_df.columns:
+                forecast_df["Upper illustrative bound (₹/qtl)"] = forecast_df["Upper CI (₹/qtl)"]
 
             latest_modal = float(market_history_df["modal_price"].iloc[-1])
             timing_signal = forecaster.generate_selling_timing_signal(
