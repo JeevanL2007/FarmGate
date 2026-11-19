@@ -145,16 +145,17 @@ st.sidebar.markdown("---")
 # Quick stats in sidebar
 markets_df = db.get_markets()
 commodities_df = db.get_commodities()
-st.sidebar.markdown(f"📅 **Latest APMC Quotes:** `{latest_mandi_date}`")
+st.sidebar.markdown(f"📅 **Benchmark Date:** `{latest_mandi_date}`")
 st.sidebar.markdown(f"🏢 **Markets Monitored:** {len(markets_df)} APMCs")
 st.sidebar.markdown(f"🌱 **Commodities Tracked:** {len(commodities_df)} crops")
+st.sidebar.markdown("📊 **Data Mode:** 🟡 `DEMO / SIMULATED`")
 
-if st.sidebar.button("🔄 Sync Live Mandi Prices", use_container_width=True):
+if st.sidebar.button("🔄 Refresh Demo Prices", use_container_width=True):
     added = auto_update_daily_prices(db)
     if added > 0:
-        st.sidebar.success(f"Added {added} latest price records for today!")
+        st.sidebar.success(f"Generated {added} benchmark demo records up to today ({today_str})!")
     else:
-        st.sidebar.info("Database is already up to date with today's quotes!")
+        st.sidebar.info("Benchmark demo records are already current up to today!")
     st.rerun()
 
 st.sidebar.info("💡 **Tip**: Change origin and harvest quantity to compare real net earnings after transport.")
@@ -170,6 +171,8 @@ if menu_selection == "🚚 Smart Selling Recommender":
         <p>Calculates net farmer earnings across Karnataka APMC markets by factoring in transport freight, loading labor, and APMC cess.</p>
     </div>
     """, unsafe_allow_html=True)
+
+    st.info("🟡 **Data Mode: Simulated Benchmark Data (Academic Demo)** — Price, arrivals, and rate metrics are calibrated from Karnataka APMC seasonal distributions for academic demonstration.")
 
     col_in1, col_in2, col_in3 = st.columns([1.2, 1.2, 1.2])
 
@@ -415,6 +418,8 @@ elif menu_selection == "📊 Market Price Comparison":
     </div>
     """, unsafe_allow_html=True)
 
+    st.info("🟡 **Data Mode: Simulated Benchmark Data (Academic Demo)** — Displaying calibrated modal, minimum, and maximum price spreads for academic evaluation.")
+
     filter_col1, filter_col2 = st.columns(2)
     with filter_col1:
         selected_comm_name = st.selectbox(
@@ -500,6 +505,8 @@ elif menu_selection == "📈 Historical Trends & Analytics":
     </div>
     """, unsafe_allow_html=True)
 
+    st.info("🟡 **Data Mode: Simulated Benchmark Data (Academic Demo)** — Time-series trends and arrival elasticities are generated from Karnataka APMC baseline models.")
+
     col_t1, col_t2, col_t3 = st.columns([1, 1.5, 1])
     with col_t1:
         selected_comm_name = st.selectbox("Select Commodity", commodities_df["name"].tolist())
@@ -577,6 +584,8 @@ elif menu_selection == "🤖 ML Price Forecasting":
         <p>Predict future crop price trends using regression algorithms trained on historical Agmarknet records, with farmer timing signals.</p>
     </div>
     """, unsafe_allow_html=True)
+
+    st.info("🟡 **Data Mode: Simulated Benchmark Data (Academic Demo)** — Machine learning regression models trained on calibrated historical time-series data.")
 
     ml_col1, ml_col2, ml_col3 = st.columns([1, 1, 1])
 
@@ -731,7 +740,7 @@ elif menu_selection == "🗄️ Database & Price Ingestion":
     </div>
     """, unsafe_allow_html=True)
 
-    db_tab1, db_tab2, db_tab3 = st.tabs(["📝 Add Daily Price Entry", "📜 Farmer Decision History", "💾 Raw Agmarknet Data Explorer"])
+    db_tab1, db_tab2, db_tab3 = st.tabs(["📝 Add Daily Price Entry", "📜 Farmer Decision History", "💾 Benchmark APMC Data Explorer"])
 
     with db_tab1:
         st.subheader("Manual APMC Trade Record Entry")
