@@ -71,6 +71,8 @@ class DecisionResult:
             "APMC Cess (₹)": round(self.apmc_cess, 2),
             "Total Expenses (₹)": round(self.total_deductions, 2),
             "Net Profit (₹)": round(self.net_profit, 2),
+            "Total selling deductions (₹)": round(self.total_deductions, 2),
+            "Estimated net selling proceeds (₹)": round(self.net_profit, 2),
             "Realized Price (₹/qtl)": round(self.net_price_per_qtl, 2),
             "Realized Price (₹/kg)": round(self.net_price_per_kg, 2),
             "Expense Burden (%)": round(self.expense_ratio_pct, 1),
@@ -225,14 +227,14 @@ class SmartSellingEngine:
                 f"Sell locally at **{best.market_name}** ({best.distance_km:.1f} km). "
                 f"Even though other markets may post higher nominal prices, the extra transportation "
                 f"costs to reach distant markets will diminish your net margin. Your local market yields "
-                f"the highest net profit of **₹ {best.net_profit:,.2f}**."
+                f"the highest estimated net selling proceeds of **₹ {best.net_profit:,.2f}**."
             )
         else:
             strategy_text = (
                 f"Transport your produce to **{best.market_name}** ({best.distance_km:.1f} km) instead of "
                 f"local market **{nearest.market_name}** ({nearest.distance_km:.1f} km). "
-                f"Even after paying an extra ₹ {best.transport_cost - nearest.transport_cost:,.2f} in transport expenses, "
-                f"you will earn an extra net profit of **₹ {profit_gain_vs_nearest:,.2f}** "
+                f"Even after paying an extra ₹ {best.transport_cost - nearest.transport_cost:,.2f} in total selling deductions, "
+                f"you will earn an extra **₹ {profit_gain_vs_nearest:,.2f}** in estimated net selling proceeds "
                 f"(+{((profit_gain_vs_nearest / nearest.net_profit) * 100):.1f}% boost)."
             )
 

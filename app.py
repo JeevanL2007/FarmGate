@@ -265,19 +265,28 @@ if menu_selection == "🚚 Smart Selling Recommender":
         nearest = summary["nearest_market"]
         profit_delta = summary["profit_gain_vs_nearest"]
 
+        basis_labels = {
+            "modal_price": ("Modal", nearest.modal_price),
+            "min_price": ("Minimum", nearest.min_price),
+            "max_price": ("Maximum", nearest.max_price)
+        }
+        basis_name, nearest_basis_price = basis_labels.get(price_basis, ("Modal", nearest.modal_price))
+
         # Recommendation Banner
         st.subheader("🎯 Recommendation Result")
         
-        banner_col1, banner_col2, banner_col3, banner_col4 = st.columns([1.5, 1, 1, 1])
+        banner_col1, banner_col2, banner_col3, banner_col4 = st.columns([2.0, 1.1, 1.0, 1.1])
         with banner_col1:
-            st.metric(
-                label="🌟 Recommended Market Destination",
-                value=best.market_name,
-                delta=f"{best.distance_km:.1f} km away"
-            )
+            st.markdown(f"""
+            <div style="background-color: #f1f8e9; border: 1.5px solid #81c784; border-radius: 8px; padding: 10px 14px; min-height: 90px;">
+                <div style="color: #2e7d32; font-size: 0.85rem; font-weight: 600;">🌟 Recommended Market Destination</div>
+                <div style="color: #1b5e20; font-size: 1.35rem; font-weight: 700; word-wrap: break-word; overflow-wrap: break-word; white-space: normal; line-height: 1.25; margin-top: 2px;">{best.market_name}</div>
+                <div style="color: #558b2f; font-size: 0.85rem; font-weight: 500; margin-top: 4px;">📍 {best.distance_km:.1f} km away</div>
+            </div>
+            """, unsafe_allow_html=True)
         with banner_col2:
             st.metric(
-                label="Estimated Net Profit",
+                label="Estimated net selling proceeds",
                 value=format_currency(best.net_profit),
                 delta=f"+{format_currency(profit_delta)} vs nearest" if not summary["is_best_the_nearest"] else "Best local option"
             )
@@ -289,7 +298,7 @@ if menu_selection == "🚚 Smart Selling Recommender":
             )
         with banner_col4:
             st.metric(
-                label="Freight & APMC Deduction",
+                label="Total selling deductions",
                 value=format_currency(best.total_deductions),
                 delta=f"{best.expense_ratio_pct:.1f}% of gross",
                 delta_color="inverse"
@@ -300,9 +309,9 @@ if menu_selection == "🚚 Smart Selling Recommender":
 
         if not summary["is_best_the_nearest"]:
             st.info(
-                f"⚖️ **Break-even Price Insight**: For your local market (**{nearest.market_name}**) to match this net profit, "
+                f"⚖️ **Break-even Price Insight**: For your local market (**{nearest.market_name}**) to match these net selling proceeds, "
                 f"they would need to offer at least **₹ {summary['break_even_nearest_price']:,.2f}/quintal** "
-                f"(Current local price: ₹ {nearest.modal_price:,.2f}/qtl)."
+                f"(Current local {basis_name.lower()} price: ₹ {nearest_basis_price:,.2f}/qtl)."
             )
 
         st.markdown("### 📊 Market Comparison & Profit Waterfall")
@@ -315,19 +324,19 @@ if menu_selection == "🚚 Smart Selling Recommender":
             fig_bar = go.Figure()
             fig_bar.add_trace(go.Bar(
                 x=ranking_df["Market"],
-                y=ranking_df["Net Profit (₹)"],
-                name="Net Profit (Take-Home)",
+                y=ranking_df["Estimated net selling proceeds (₹)"],
+                name="Estimated Net Selling Proceeds",
                 marker_color="#2e7d32"
             ))
             fig_bar.add_trace(go.Bar(
                 x=ranking_df["Market"],
-                y=ranking_df["Total Expenses (₹)"],
-                name="Total Deductions (Transport + Cess + Labor)",
+                y=ranking_df["Total selling deductions (₹)"],
+                name="Total Selling Deductions (Freight + Cess + Labor)",
                 marker_color="#d32f2f"
             ))
             fig_bar.update_layout(
                 barmode="stack",
-                title=f"Net Profit vs Total Deductions for {harvest_qtl} Quintals of {comm_name}",
+                title=f"Estimated Net Selling Proceeds vs Total Selling Deductions for {harvest_qtl} Quintals of {comm_name}",
                 xaxis_title="APMC Market",
                 yaxis_title="Amount in Indian Rupees (₹)",
                 hovermode="x unified",
@@ -340,22 +349,23 @@ if menu_selection == "🚚 Smart Selling Recommender":
                 ranking_df,
                 x="Distance (km)",
                 y="Realized Price (₹/qtl)",
-                size="Net Profit (₹)",
-                color="Net Profit (₹)",
+                size="Estimated net selling proceeds (₹)",
+                color="Estimated net selling proceeds (₹)",
                 hover_name="Market",
                 text="Market",
                 color_continuous_scale="Greens",
-                title=f"Distance vs Realized Price per Quintal (Bubble Size = Net Take-Home Profit)"
+                title=f"Distance vs Realized Price per Quintal (Bubble Size = Net Selling Proceeds)"
             )
             fig_bubble.update_traces(textposition='top center')
             st.plotly_chart(fig_bubble, use_container_width=True)
 
         with tab_table:
             # Format and present ranking table
-            styled_df = ranking_df.copy()
+            display_cols = [c for c in ranking_df.columns if c not in ["Net Profit (₹)", "Total Expenses (₹)"]]
+            styled_df = ranking_df[display_cols].copy()
             st.dataframe(styled_df, use_container_width=True)
 
-            csv_data = ranking_df.to_csv(index=False).encode('utf-8')
+            csv_data = styled_df.to_csv(index=False).encode('utf-8')
             st.download_button(
                 label="📥 Download Decision Report (CSV)",
                 data=csv_data,
@@ -380,7 +390,7 @@ if menu_selection == "🚚 Smart Selling Recommender":
                 name="Cost Bridge",
                 orientation="v",
                 measure=["relative", "relative", "relative", "relative", "total"],
-                x=["Gross Revenue", "Transport Freight", "Labor & Handling", "APMC Cess", "Net Earnings"],
+                x=["Gross Revenue", "Transport Freight", "Labor & Handling", "APMC Cess", "Estimated Net Proceeds"],
                 textposition="outside",
                 text=[f"+₹{best.gross_revenue:,.0f}", f"-₹{best.transport_cost:,.0f}", f"-₹{best.labor_cost:,.0f}", f"-₹{best.apmc_cess:,.0f}", f"₹{best.net_profit:,.0f}"],
                 y=[best.gross_revenue, -best.transport_cost, -best.labor_cost, -best.apmc_cess, 0],
@@ -389,7 +399,7 @@ if menu_selection == "🚚 Smart Selling Recommender":
                 increasing={"marker": {"color": "#66bb6a"}},
                 totals={"marker": {"color": "#2e7d32"}}
             ))
-            waterfall_fig.update_layout(title="Revenue to Net Profit Waterfall Breakdown (₹)", showlegend=False)
+            waterfall_fig.update_layout(title="Revenue to Estimated Net Proceeds Waterfall Breakdown (₹)", showlegend=False)
             st.plotly_chart(waterfall_fig, use_container_width=True)
 
         # Log this decision
@@ -450,9 +460,9 @@ elif menu_selection == "📊 Market Price Comparison":
         with m_col2:
             st.metric("Lowest Modal Price", f"₹ {lowest_row['modal_price']:,.0f}/qtl", f"{lowest_row['market_name']}")
         with m_col3:
-            st.metric("State Average Modal", f"₹ {avg_modal:,.0f}/qtl")
+            st.metric("Average modal price across displayed markets", f"₹ {avg_modal:,.0f}/qtl")
         with m_col4:
-            st.metric("Cross-Market Price Spread", f"₹ {price_spread:,.0f}/qtl", f"{((price_spread / avg_modal) * 100):.1f}% variance")
+            st.metric("Cross-Market Price Spread", f"₹ {price_spread:,.0f}/qtl", f"{((price_spread / avg_modal) * 100):.1f}% spread as % of average")
 
         # Price Comparison Grouped Bar Chart
         st.markdown("### 📊 Min, Modal & Max Price Comparison")
@@ -517,7 +527,6 @@ elif menu_selection == "📈 Historical Trends & Analytics":
             markets_df["name"].tolist(),
             default=markets_df["name"].tolist()[:4]
         )
-        selected_market_ids = markets_df[markets_df["name"].isin(selected_markets)]["id"].tolist()
     with col_t3:
         time_horizon = st.selectbox(
             "Time Horizon",
@@ -527,51 +536,55 @@ elif menu_selection == "📈 Historical Trends & Analytics":
         days_map = {"Last 30 Days": 30, "Last 60 Days": 60, "Last 90 Days": 90, "Full 180 Days": 180}
         cutoff_date = (pd.to_datetime("today") - pd.Timedelta(days=days_map[time_horizon])).strftime("%Y-%m-%d")
 
-    history_df = db.get_historical_prices(
-        commodity_id=comm_id,
-        market_ids=selected_market_ids,
-        start_date=cutoff_date
-    )
-
-    if history_df.empty:
-        st.warning("No historical records available for the selected filters.")
+    if not selected_markets:
+        st.warning("⚠️ Please select at least one market to display historical trends.")
     else:
-        # Time Series Line Chart
-        st.markdown("### 📉 Multi-Market Modal Price Movement")
-        fig_trend = px.line(
-            history_df,
-            x="date",
-            y="modal_price",
-            color="market_name",
-            title=f"{selected_comm_name} Price Trend (₹/qtl) – {time_horizon}",
-            labels={"modal_price": "Modal Price (₹/qtl)", "date": "Date", "market_name": "Market"}
+        selected_market_ids = markets_df[markets_df["name"].isin(selected_markets)]["id"].tolist()
+        history_df = db.get_historical_prices(
+            commodity_id=comm_id,
+            market_ids=selected_market_ids,
+            start_date=cutoff_date
         )
-        fig_trend.update_layout(hovermode="x unified")
-        st.plotly_chart(fig_trend, use_container_width=True)
 
-        # Arrival vs Price Relationship
-        st.markdown("### ⚖️ Arrival Volume vs Modal Price Dynamics")
-        fig_scatter = px.scatter(
-            history_df,
-            x="arrivals_in_qtl",
-            y="modal_price",
-            color="market_name",
-            title=f"Supply vs Price Elasticity: Arrivals (Quintals) vs Modal Price (₹/qtl)",
-            labels={"arrivals_in_qtl": "Arrivals (Quintals)", "modal_price": "Modal Price (₹/qtl)"}
-        )
-        st.plotly_chart(fig_scatter, use_container_width=True)
+        if history_df.empty:
+            st.warning("No historical records available for the selected filters.")
+        else:
+            # Time Series Line Chart
+            st.markdown("### 📉 Multi-Market Modal Price Movement")
+            fig_trend = px.line(
+                history_df,
+                x="date",
+                y="modal_price",
+                color="market_name",
+                title=f"{selected_comm_name} Price Trend (₹/qtl) – {time_horizon}",
+                labels={"modal_price": "Modal Price (₹/qtl)", "date": "Date", "market_name": "Market"}
+            )
+            fig_trend.update_layout(hovermode="x unified")
+            st.plotly_chart(fig_trend, use_container_width=True)
 
-        # Price Distribution Boxplot
-        st.markdown("### 📦 Market Price Distribution & Volatility Spread")
-        fig_box = px.box(
-            history_df,
-            x="market_name",
-            y="modal_price",
-            color="market_name",
-            points="outliers",
-            title=f"Price Dispersion across Selected APMC Markets ({time_horizon})"
-        )
-        st.plotly_chart(fig_box, use_container_width=True)
+            # Arrival vs Price Relationship
+            st.markdown("### ⚖️ Arrivals vs modal price")
+            fig_scatter = px.scatter(
+                history_df,
+                x="arrivals_in_qtl",
+                y="modal_price",
+                color="market_name",
+                title=f"Arrivals vs modal price: Arrivals (Quintals) vs Modal Price (₹/qtl)",
+                labels={"arrivals_in_qtl": "Arrivals (Quintals)", "modal_price": "Modal Price (₹/qtl)"}
+            )
+            st.plotly_chart(fig_scatter, use_container_width=True)
+
+            # Price Distribution Boxplot
+            st.markdown("### 📦 Market Price Distribution & Volatility Spread")
+            fig_box = px.box(
+                history_df,
+                x="market_name",
+                y="modal_price",
+                color="market_name",
+                points="outliers",
+                title=f"Price Dispersion across Selected APMC Markets ({time_horizon})"
+            )
+            st.plotly_chart(fig_box, use_container_width=True)
 
 
 # ---------------------------------------------------------
@@ -581,7 +594,7 @@ elif menu_selection == "🤖 ML Price Forecasting":
     st.markdown("""
     <div class="main-header">
         <h1>🤖 Machine Learning Price Forecasting Engine</h1>
-        <p>Predict future crop price trends using regression algorithms trained on historical Agmarknet records, with farmer timing signals.</p>
+        <p>Predict future crop price trends using regression algorithms trained on simulated Karnataka market data, with demo farmer timing signals.</p>
     </div>
     """, unsafe_allow_html=True)
 
@@ -628,11 +641,11 @@ elif menu_selection == "🤖 ML Price Forecasting":
         # Farmer Action Signal Banner
         signal_type = timing_signal["signal"]
         if "HOLD" in signal_type:
-            st.success(f"### 🟢 SMART SELLING SIGNAL: {signal_type}\n{timing_signal['rationale']}")
+            st.success(f"### 🟢 {signal_type}\n{timing_signal['rationale']}")
         elif "SELL IMMEDIATELY" in signal_type:
-            st.error(f"### 🔴 SMART SELLING SIGNAL: {signal_type}\n{timing_signal['rationale']}")
+            st.error(f"### 🔴 {signal_type}\n{timing_signal['rationale']}")
         else:
-            st.info(f"### 🟡 SMART SELLING SIGNAL: {signal_type}\n{timing_signal['rationale']}")
+            st.info(f"### 🟡 {signal_type}\n{timing_signal['rationale']}")
 
         # Model Performance Cards
         st.markdown("### 📐 Model Performance Metrics (Test Set Evaluation)")
@@ -648,7 +661,7 @@ elif menu_selection == "🤖 ML Price Forecasting":
             st.metric("MAPE (Mean % Error)", f"{m['MAPE_pct']:.2f}%")
 
         # Forecast Trajectory Chart
-        st.markdown("### 🔮 Projected Price Path & Confidence Intervals")
+        st.markdown("### 🔮 Projected Price Path & Illustrative Uncertainty Band")
         
         # Prepare plot with recent history + forecast
         recent_hist = market_history_df.iloc[-30:].copy()
@@ -660,7 +673,7 @@ elif menu_selection == "🤖 ML Price Forecasting":
             x=recent_hist["date"],
             y=recent_hist["modal_price"],
             mode="lines+markers",
-            name="Historical Actual Modal Price",
+            name="Historical Modal Price (Simulated)",
             line=dict(color="#1976d2", width=2.5)
         ))
 
@@ -669,33 +682,33 @@ elif menu_selection == "🤖 ML Price Forecasting":
             x=forecast_df["Date"],
             y=forecast_df["Forecasted Price (₹/qtl)"],
             mode="lines+markers",
-            name="ML Projected Modal Price",
+            name="ML Projected Modal Price (Simulated)",
             line=dict(color="#2e7d32", width=3, dash="dash")
         ))
 
         # Upper Bound
         fig_fc.add_trace(go.Scatter(
             x=forecast_df["Date"],
-            y=forecast_df["Upper CI (₹/qtl)"],
+            y=forecast_df["Upper illustrative bound (₹/qtl)"],
             mode="lines",
             line=dict(width=0),
             showlegend=False,
-            name="Upper 95% Confidence Bound"
+            name="Upper illustrative bound"
         ))
 
         # Lower Bound with fill
         fig_fc.add_trace(go.Scatter(
             x=forecast_df["Date"],
-            y=forecast_df["Lower CI (₹/qtl)"],
+            y=forecast_df["Lower illustrative bound (₹/qtl)"],
             mode="lines",
             line=dict(width=0),
             fill="tonexty",
             fillcolor="rgba(46, 125, 50, 0.15)",
-            name="95% Confidence Interval"
+            name="Illustrative uncertainty band"
         ))
 
         fig_fc.update_layout(
-            title=f"{forecast_comm} at {forecast_market}: {horizon_days}-Day ML Price Forecast",
+            title=f"{forecast_comm} at {forecast_market}: {horizon_days}-Day ML Price Forecast (Simulated Data)",
             xaxis_title="Date",
             yaxis_title="Price (₹ / Quintal)",
             hovermode="x unified"
@@ -705,7 +718,8 @@ elif menu_selection == "🤖 ML Price Forecasting":
         # Tabular Forecast & Feature Importance
         tab_fc_table, tab_feat_imp = st.tabs(["📋 Forecast Schedule Table", "🔬 Feature Importance Breakdown"])
         with tab_fc_table:
-            st.dataframe(forecast_df, use_container_width=True)
+            display_fc_cols = ["Date", "Day", "Forecasted Price (₹/qtl)", "Lower illustrative bound (₹/qtl)", "Upper illustrative bound (₹/qtl)"]
+            st.dataframe(forecast_df[display_fc_cols], use_container_width=True)
 
         with tab_feat_imp:
             if train_output["feature_importance"]:
@@ -744,32 +758,20 @@ elif menu_selection == "🗄️ Database & Price Ingestion":
 
     with db_tab1:
         st.subheader("Manual APMC Trade Record Entry")
+        st.warning("🔒 **Manual Entry Writes Disabled for Demo Integrity:** Direct write operations are disabled in this demonstration to protect baseline benchmark records from accidental overwrites. The benchmark explorer and query history remain fully accessible.")
         with st.form("add_price_form"):
             form_col1, form_col2 = st.columns(2)
             with form_col1:
-                in_market = st.selectbox("APMC Market", markets_df["name"].tolist())
-                in_comm = st.selectbox("Commodity", commodities_df["name"].tolist())
-                in_date = st.date_input("Trade Date", pd.to_datetime("today"))
+                in_market = st.selectbox("APMC Market", markets_df["name"].tolist(), disabled=True)
+                in_comm = st.selectbox("Commodity", commodities_df["name"].tolist(), disabled=True)
+                in_date = st.date_input("Trade Date", pd.to_datetime("today"), disabled=True)
             with form_col2:
-                in_arrivals = st.number_input("Arrivals (Quintals)", min_value=1.0, value=1200.0)
-                in_min = st.number_input("Minimum Price (₹/qtl)", min_value=100.0, value=2200.0)
-                in_modal = st.number_input("Modal Price (₹/qtl)", min_value=100.0, value=2500.0)
-                in_max = st.number_input("Maximum Price (₹/qtl)", min_value=100.0, value=2800.0)
+                in_arrivals = st.number_input("Arrivals (Quintals)", min_value=1.0, value=1200.0, disabled=True)
+                in_min = st.number_input("Minimum Price (₹/qtl)", min_value=100.0, value=2200.0, disabled=True)
+                in_modal = st.number_input("Modal Price (₹/qtl)", min_value=100.0, value=2500.0, disabled=True)
+                in_max = st.number_input("Maximum Price (₹/qtl)", min_value=100.0, value=2800.0, disabled=True)
 
-            submitted = st.form_submit_button("Submit Price Entry")
-            if submitted:
-                m_id = int(markets_df[markets_df["name"] == in_market].iloc[0]["id"])
-                c_id = int(commodities_df[commodities_df["name"] == in_comm].iloc[0]["id"])
-                db.insert_daily_price(
-                    market_id=m_id,
-                    commodity_id=c_id,
-                    date_str=in_date.strftime("%Y-%m-%d"),
-                    arrivals=in_arrivals,
-                    min_p=in_min,
-                    max_p=in_max,
-                    modal_p=in_modal
-                )
-                st.success(f"Successfully recorded price for {in_comm} at {in_market} on {in_date}!")
+            submitted = st.form_submit_button("Submit Price Entry (Disabled in Demo)", disabled=True)
 
     with db_tab2:
         st.subheader("Recent Farmer Queries & Recommender Log")

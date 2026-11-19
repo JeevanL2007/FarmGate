@@ -47,7 +47,7 @@ Without accurate net-earning calculations, farmers frequently transport produce 
 2. **Break-Even Price Sensitivity:** Computes the minimum price the local market must pay to match a distant market's profit.
 3. **Cross-Market Price Comparison:** Compares minimum, maximum, and modal price spreads across 10 major Karnataka APMC markets.
 4. **Historical Trend Analysis:** Multi-market time series charts, price volatility spreads, and arrival volume elasticity.
-5. **Machine Learning Price Forecasting:** Regression models predicting 7- to 14-day price trajectories with 95% confidence bounds and **SELL NOW** vs. **HOLD** timing signals.
+5. **Machine Learning Price Forecasting:** Regression models predicting 7- to 14-day price trajectories with illustrative uncertainty bands and demo timing signals (**HOLD** / **SELL** / **STABLE**).
 6. **Dual-Interface Architecture:** User-friendly **Streamlit web dashboard** for farmers and an asynchronous **FastAPI REST API** with interactive Swagger documentation.
 
 ---
@@ -79,7 +79,7 @@ Without accurate net-earning calculations, farmers frequently transport produce 
 |  +------------------------+  +------------------------+  +---------------------+  |
 |  | Smart Selling Engine   |  | ML Forecasting Engine  |  | Routing & Freight   |  |
 |  | (decision_engine.py)   |  | (ml_model.py)          |  | (utils.py)          |  |
-|  | - Net Profit Deduction |  | - Random Forest        |  | - Haversine Formula |  |
+|  | - Net Earnings Calc.  |  | - Random Forest        |  | - Haversine Formula |  |
 |  | - Market Ranker        |  | - Gradient Boosting    |  | - Road Winding 1.25x|  |
 |  | - Break-Even Analysis  |  | - Ridge Regression     |  | - Vehicle Profiles  |  |
 |  +------------------------+  +------------------------+  +---------------------+  |
@@ -117,7 +117,7 @@ For a farmer located at origin $O$ with quantity $Q$ quintals of commodity $C$, 
    $$\text{Cost}_{\text{cess}} = (Q \times P_{\text{modal}, i}) \times \left(\frac{\text{CessRate}_{M_i}}{100}\right)$$
    $$\text{Total Deductions} = \text{Cost}_{\text{transport}} + \text{Cost}_{\text{labor}} + \text{Cost}_{\text{cess}}$$
 
-4. **Net Farmer Take-Home Earnings:**
+4. **Net Farmer Take-Home Earnings (labelled "Estimated net selling proceeds" in the UI):**
    $$\text{Gross Revenue} = Q \times P_{\text{modal}, i}$$
    $$\text{Net Profit} = \text{Gross Revenue} - \text{Total Deductions}$$
    $$\text{Realized Rate per Quintal} = \frac{\text{Net Profit}}{Q}$$
@@ -136,7 +136,7 @@ Honest academic transparency regarding data handling in FarmGate:
 | **Baseline Benchmark Dataset** | Mathematically calibrated time series based on historical Karnataka APMC patterns (seasonal sinusoidal macro trends, arrival-to-price elasticity, day-of-week surges, and inter-mandi price multipliers). | **Active in Demo Mode.** Used for offline presentations and evaluation demos to ensure 100% uptime and resilience against government network timeouts. |
 | **Daily Rolling Auto-Updater** | Mean-reverting random walk expanding the calendar series up to the current date so that evaluation dates match current time. | **Active.** Clearly marked in UI as `🟡 DEMO / SIMULATED`. |
 | **AGMARKNET Government Connector** | Direct integration module (`src/live_sync.py`) configured for Open Government Data India (`api.data.gov.in`, Resource ID: `9ef84268-d588-465a-a308-a864a43d0070`). | **Configured.** Requires a free personal API key from `data.gov.in`. In absence of key, gracefully defaults to labelled demo data. |
-| **Manual APMC Field Entry** | Direct daily entry form in UI under *Database & Price Ingestion* tab. | **Fully Functional.** Allows recording verified daily physical auction slips directly into SQLite. |
+| **Manual APMC Field Entry** | Daily entry form in UI under *Database & Price Ingestion* tab. | **Disabled in deployed demo** to protect benchmark data integrity. The form and benchmark explorer remain visible for reference. |
 
 > [!NOTE]
 > All simulated prices are explicitly marked with **`🟡 DEMO / SIMULATED`** badges across the user interface, tables, and charts to prevent misrepresenting synthetic data as live government feeds.
@@ -161,12 +161,12 @@ Honest academic transparency regarding data handling in FarmGate:
 ### Evaluation & Validation
 - **Train/Test Split:** Temporal out-of-time evaluation (last 30 calendar days held out for validation; no future data leakage).
 - **Evaluation Metrics:** Mean Absolute Error (MAE), Root Mean Squared Error (RMSE), Coefficient of Determination ($R^2$), and Mean Absolute Percentage Error (MAPE).
-- **Uncertainty Bounds:** Multi-step recursive forecasting with 95% Confidence Interval bands:
-  $$\text{CI Bound} = \hat{y}_t \pm 1.96 \cdot \sigma_{\text{residual}} \sqrt{1 + 0.1 \cdot t}$$
-- **Actionable Decision Signals:**
+- **Illustrative Uncertainty Bounds:** Multi-step recursive forecasting with widening illustrative uncertainty bands (not formal statistical confidence intervals):
+  $$\text{Illustrative Bound} = \hat{y}_t \pm 1.96 \cdot \sigma_{\text{residual}} \sqrt{1 + 0.1 \cdot t}$$
+- **Demo Decision Signals** (labels prefixed with DEMO SIGNAL in the app):
   - 🟢 **HOLD FOR HIGHER GAINS:** Projected price increase $> 6\%$.
-  - 🔴 **SELL IMMEDIATELY:** Projected price drop $> 4\%$ (arrival surges expected).
-  - 🟡 **STABLE / SELL AT WILL:** Range-bound price trajectory within $\pm 4\%$.
+  - 🔴 **SELL IMMEDIATELY:** Projected price decline $> 4\%$.
+  - 🟡 **STABLE / SELL AT WILL:** Signed change between latest price and near-term forecast average within $\pm 4\%$.
 
 ---
 
@@ -320,7 +320,7 @@ FarmGate/
 ## ⚠️ 12. Project Limitations & Future Scope
 
 ### Current Limitations
-1. **Government API Network Latency:** `data.gov.in` servers experience intermittent downtime or response timeouts, requiring the local baseline cache to ensure presentation uptime.
+1. **Demo Data Only in Deployed App:** The deployed Streamlit application runs on simulated benchmark data. The `src/live_sync.py` module is an experimental reference connector for `data.gov.in` and is not used to serve live prices in the current deployment.
 2. **Fixed Mandi Cess Assumption:** APMC cess is modeled at a uniform 1.5% statutory rate; certain specialized commodities may have localized fee exemptions.
 3. **Mandi Holiday Reporting:** APMCs do not conduct auctions on Sundays and state holidays, resulting in physical arrival gaps.
 4. **Single-Commodity Freight:** Current freight logic models a single crop shipment; multi-commodity mixed truckloads are not yet simulated.

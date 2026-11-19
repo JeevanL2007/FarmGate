@@ -67,8 +67,8 @@ def test_selling_signal(synthetic_history):
     assert "signal" in signal
     assert "rationale" in signal
     assert signal["signal"] in [
-        "SELL IMMEDIATELY",
-        "HOLD FOR HIGHER GAINS",
-        "HOLD WITH CAUTION (1-2 DAYS)",
-        "STABLE / SELL AT WILL"
+        "DEMO SIGNAL: SELL IMMEDIATELY",
+        "DEMO SIGNAL: HOLD FOR HIGHER GAINS",
+        "DEMO SIGNAL: HOLD WITH CAUTION (1-2 DAYS)",
+        "DEMO SIGNAL: STABLE / SELL AT WILL"
     ]

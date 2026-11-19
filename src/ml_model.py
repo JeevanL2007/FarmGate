@@ -219,6 +219,8 @@ class PriceForecaster:
                 "Date": next_date.strftime("%Y-%m-%d"),
                 "Day": next_date.strftime("%a"),
                 "Forecasted Price (₹/qtl)": round(pred_price, 2),
+                "Lower illustrative bound (₹/qtl)": round(lower_bound, 2),
+                "Upper illustrative bound (₹/qtl)": round(upper_bound, 2),
                 "Lower CI (₹/qtl)": round(lower_bound, 2),
                 "Upper CI (₹/qtl)": round(upper_bound, 2)
             })
@@ -251,30 +253,33 @@ class PriceForecaster:
         price_diff = avg_future_price - current_price
         pct_change = (price_diff / current_price) * 100.0
 
+        signed_pct = f"{pct_change:+.1f}%"
+        signed_diff = f"₹ {price_diff:+.1f}/qtl"
+
         if pct_change >= 6.0:
             if perishable_level == "High":
-                signal = "HOLD WITH CAUTION (1-2 DAYS)"
+                signal = "DEMO SIGNAL: HOLD WITH CAUTION (1-2 DAYS)"
                 rationale = (
-                    f"Prices are projected to increase by ~{pct_change:.1f}% over the next few days. "
+                    f"Demo model projects a near-term price increase of {signed_pct} ({signed_diff}). "
                     f"However, this crop has high perishability, so store in cool conditions or sell within 48 hours."
                 )
             else:
-                signal = "HOLD FOR HIGHER GAINS"
+                signal = "DEMO SIGNAL: HOLD FOR HIGHER GAINS"
                 rationale = (
-                    f"Bullish trend predicted: Market expected to gain ~₹ {price_diff:.1f}/qtl (+{pct_change:.1f}%). "
-                    f"Holding harvest for 3-5 days can maximize your returns."
+                    f"Bullish trend projected by demo model: Estimated near-term change is {signed_pct} ({signed_diff}). "
+                    f"Holding harvest for 3-5 days may offer better returns under simulated projections."
                 )
         elif pct_change <= -4.0:
-            signal = "SELL IMMEDIATELY"
+            signal = "DEMO SIGNAL: SELL IMMEDIATELY"
             rationale = (
-                f"Bearish trend detected: Prices are projected to decline by ~₹ {abs(price_diff):.1f}/qtl "
-                f"({pct_change:.1f}%) due to expected arrival increases. Sell today to avoid losses."
+                f"Bearish trend projected by demo model: Estimated price decline of {signed_diff} "
+                f"({signed_pct}) over the near-term forecast horizon. Selling promptly may mitigate risk."
             )
         else:
-            signal = "STABLE / SELL AT WILL"
+            signal = "DEMO SIGNAL: STABLE / SELL AT WILL"
             rationale = (
-                f"Market prices are expected to remain steady within a ±{abs(pct_change):.1f}% band. "
-                f"Sell according to your harvesting schedule without urgency."
+                f"Projected price movement is steady, with an estimated signed change of {signed_pct} "
+                f"({signed_diff}) between the latest price and the average of the first few forecast days."
             )
 
         return {
