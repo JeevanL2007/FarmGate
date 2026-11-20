@@ -43,12 +43,12 @@ Without accurate net-earning calculations, farmers frequently transport produce 
 
 ### The FarmGate Solution
 **FarmGate** is an intelligent agricultural decision-support platform designed for Karnataka's agrarian ecosystem. It provides:
-1. **Smart Selling Recommender:** Deducts freight, labor, and cess from gross revenues to rank candidate APMCs by actual net earnings.
-2. **Break-Even Price Sensitivity:** Computes the minimum price the local market must pay to match a distant market's profit.
-3. **Cross-Market Price Comparison:** Compares minimum, maximum, and modal price spreads across 10 major Karnataka APMC markets.
-4. **Historical Trend Analysis:** Multi-market time series charts, price volatility spreads, and arrival volume elasticity.
-5. **Machine Learning Price Forecasting:** Regression models predicting 7- to 14-day price trajectories with illustrative uncertainty bands and demo timing signals (**HOLD** / **SELL** / **STABLE**).
-6. **Dual-Interface Architecture:** User-friendly **Streamlit web dashboard** for farmers and an asynchronous **FastAPI REST API** with interactive Swagger documentation.
+1 **Smart Selling Recommender:** Deducts freight, labor, and cess from gross revenues to rank candidate APMCs by actual net earnings.
+2 **Break-Even Price Sensitivity:** Computes the minimum price the local market must pay to match a distant market's profit.
+3 **Cross-Market Price Comparison:** Compares minimum, maximum, and modal price spreads across 10 major Karnataka APMC markets.
+4 **Historical Trend Analysis:** Multi-market time series charts, price volatility spreads, and arrival volume elasticity.
+5 **Machine Learning Price Forecasting:** Regression models predicting 7- to 14-day price trajectories with illustrative uncertainty bands and demo timing signals (**HOLD** / **SELL** / **STABLE**).
+6 **Dual-Interface Architecture:** User-friendly **Streamlit web dashboard** for farmers and an asynchronous **FastAPI REST API** with interactive Swagger documentation.
 
 ---
 
